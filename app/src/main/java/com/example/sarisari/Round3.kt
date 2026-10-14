@@ -10,10 +10,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.lightColorScheme
@@ -25,13 +27,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.sarisari.StoreViewModel
+import com.example.sarisari.UiState
 import com.example.sarisari.bigStore
-
 
 private val StoreColors = lightColorScheme(
     primary = Color(0xFF2E7D32),
@@ -63,8 +68,13 @@ fun StoreApp() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ItemListScreen(onItemClick: (Int) -> Unit) {
+fun ItemListScreen(
+    onItemClick: (Int) -> Unit,
+    vm: StoreViewModel = viewModel()
+) {
     var selectedId by remember { mutableStateOf<Int?>(null) }
+    val query by vm.query.collectAsStateWithLifecycle()
+    val state by vm.state.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -77,24 +87,60 @@ fun ItemListScreen(onItemClick: (Int) -> Unit) {
             )
         }
     ) { padding ->
-        LazyColumn(Modifier.padding(padding)) {
-            items(bigStore, key = { it.id }) { item ->
-                val color by animateColorAsState(
-                    if (selectedId == item.id) Color(0xFFC8E6C9) else Color.White,
-                    label = "cardColor"
-                )
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = color),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                        .clickable {
-                            selectedId = item.id
-                            onItemClick(item.id)
-                        }
-                ) {
-                    Text("${item.name}   ₱${item.price}", Modifier.padding(16.dp))
+        Column(Modifier.padding(padding)) {
+            TextField(
+                value = query,
+                onValueChange = vm::onQueryChange,
+                label = { Text("Search store items") },
+                placeholder = { Text("Try sin, noodles, coffee...") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                singleLine = true
+            )
+
+            when (val s = state) {
+                is UiState.Loading -> {
+                    CircularProgressIndicator(Modifier.padding(16.dp))
                 }
+                is UiState.Success -> {
+                    Text(
+                        "Loaded at ${s.loadedAt}",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                    if (s.items.isEmpty()) {
+                        Text("No results found", Modifier.padding(16.dp))
+                    } else {
+                        LazyColumn {
+                            items(s.items, key = { it.id }) { item ->
+                                val color by animateColorAsState(
+                                    targetValue = if (selectedId == item.id) {
+                                        Color(0xFFC8E6C9)
+                                    } else {
+                                        Color.White
+                                    },
+                                    label = "cardColor"
+                                )
+                                Card(
+                                    colors = CardDefaults.cardColors(containerColor = color),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(8.dp)
+                                        .clickable {
+                                            selectedId = item.id
+                                            onItemClick(item.id)
+                                        }
+                                ) {
+                                    Text(
+                                        "${item.name}   ₱${item.price}",
+                                        Modifier.padding(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                is UiState.Error -> Text(s.message, Modifier.padding(16.dp))
             }
         }
     }
