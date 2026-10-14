@@ -3,54 +3,22 @@ package com.example.sarisari
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import com.example.sarisari.round3.StoreApp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            Column {
-                StoreHeader()
-                CartCounter()
+            MaterialTheme {
+                Surface(Modifier.fillMaxSize().statusBarsPadding()) {
+                    StoreApp()
+                }
             }
         }
-    }
-}
-
-@Composable
-fun CartCounter() {
-    var count by remember { mutableStateOf(0) }
-    Column(Modifier.padding(16.dp)) {
-        Text("Items in cart: $count")
-        Button(onClick = { count++ }) { Text("Add") }
-    }
-}
-
-@Composable
-fun StoreNameField(name: String, onNameChange: (String) -> Unit) {
-    TextField(
-        value = name,
-        onValueChange = onNameChange,
-        label = { Text("Store name") }
-    )
-}
-
-@Composable
-fun StoreHeader() {
-    var name by remember { mutableStateOf("") }
-    Column(Modifier.padding(16.dp)) {
-        Text("Welcome to $name's store!")
-        StoreNameField(name = name, onNameChange = { name = it })
     }
 }
